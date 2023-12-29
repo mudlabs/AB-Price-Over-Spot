@@ -1,4 +1,4 @@
-# AB Proce Over Spot
+# AB Price Over Spot
 This browser extension is for [ainsliebullion.com.au]. It finds product listings on their site and updates the UI to display the percentage above the market spot price they are selling the bullion for. This is often referred to as the `premium`.
 
 ## Limitations
