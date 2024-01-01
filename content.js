@@ -89,7 +89,7 @@ const setStyle = (value, isProductPage) => {
 const cardUI = value => {
     const shell = document.createElement("div");
     const style = setStyle(value, false);
-    shell.innerHTML = `<div class="d-flex justify-content-end align-items-center gap-1"><div class="card-price"><span class="price-number" style="${style}">${value}%</span></div></div>`;
+    shell.innerHTML = `<div class="d-flex justify-content-end align-items-center gap-1"><div><span style="${style}">${value}%</span></div></div>`;
     return shell;
 }
 
@@ -113,12 +113,13 @@ const findOverSpotPercentage = (type, itemPrice, itemWeight) => {
     const spotValueByWeight = product_type[type].spot_price / (1000/itemWeight);
     const fraction = itemPrice - spotValueByWeight;
     const percentage = fraction / spotValueByWeight * 100;
-    console.log(spotValueByWeight, fraction, percentage)
     return percentage.toFixed(3);
 }
 
 const establishPremium = (type, item) => {
-    const price = parseFloat(item.dataset.price.replace(/\,/g, ""));
+    const worse_price = item.querySelector(".card-price").lastElementChild.innerText;
+    const sanitised = worse_price.replace(/[\$\,]/g, "");
+    const price = parseFloat(sanitised);
     const percentage = findOverSpotPercentage(type, price, item.dataset.grams);
     return { percentage };
 }
@@ -186,7 +187,8 @@ function run (path) {
     const wrapper = document.getElementById("productWrapper");
     const cards = [...wrapper.querySelectorAll(".productCard")];
     cards.forEach(card => {
-        const sanitised = card.dataset.price.replace(/\,/g, "");
+        const worse_price = card.querySelector(".card-price").lastElementChild.innerText;
+        const sanitised = worse_price.replace(/[\$\,]/g, "");
         const price = parseFloat(sanitised);
         const grams = card.dataset.grams;
         const type = findCardType(card);
