@@ -1,42 +1,32 @@
 const tozInKg = 32.1507;
 const kgInToz = 0.0311;
+const gold_legends = ["GC", "GM", "RGC", "FGG", "GB", "UNALLOCATEDGOLDSTORAGE", "RGC"];
+const silver_legends = ["SM", "SC", "SB", "UNALLOCATEDSILVERSTORAGE", "RSC"];
+const platinum_legends = ["PC", "PB", "UNALLOCATEDPLATINUMSTORAGE"];
 
-const product_type = {
-    "gold": {
-        "spot_price": undefined,
-        "legends": ["GC", "GM", "RGC", "FGG", "GB", "UnallocatedGoldStorage", "RGC"]
-    },
-    "silver": {
-        "spot_price": undefined,
-        "legends": ["SM", "SC", "SB", "UnallocatedSilverStorage", "RSC"]
-    },
-    "platinum": {
-        "spot_price": undefined,
-        "legends": ["PC", "PB", "Unallocated Platinum Storage"]
-    }
-
-}
-
-
-/** On the home page we can search the product description of each carousel-item to identify it's product type i.e. Gold */
 
 /**
- * Takes the name of a spot type `i.e. gold` and sets its value in the spot object.
+ * Takes the name of a spot type `i.e. gold` and sets its value in this.sessionStorage.
  * @param {array} names 
  * @returns undefined
  */
 const setSpot = (names, isToz) => {
-    names.forEach(spotName => {
-        const name = capitalise(spotName);
+    names.forEach(type => {
+        const name = capitalise(type);
         const element = document.getElementById(`div${name}Spot`);
         const text = element.innerText;
         const number = parseFloat(text);
+        const price = isToz ? number * tozInKg : number;
 
-        product_type[spotName].spot_price = isToz ? number * tozInKg : number;
+        this.sessionStorage.setItem(`${type}_spot_price`, price);
     });
-    
 };
 
+/**
+ * Takes an array of spot names and returns the displayed spot value in an object.
+ * @param {array} names 
+ * @returns object
+ */
 const getSpot = names => {
     const numbers = {}
     names.forEach(spotName => {
@@ -49,30 +39,18 @@ const getSpot = names => {
     return numbers;
 }
 
+const sessionDataIsSet = (key) => this.sessionStorage.getItem(key) === null ? false : true;
+const setSessionData = (key, value) => this.sessionStorage.setItem(key, JSON.stringify(value));
+const getSessionData = (key) => JSON.parse(this.sessionStorage.getItem(key));
 
-const spotUIDisplaysAUD = () => {
-    const currency = document.getElementById("divGoldCurrency");
-    return currency.innerText.trim() === "AU";
-}
-
-/**
- * Converts a string into a formatted propper noun string.
- * @param {string} word 
- * @returns string
- */
-const capitalise = word => word.charAt(0).toUpperCase() + word.slice(1);
 
 /**
  * Returns the OZ/KG toggle input element from the UI
  */
 const getSpotWeightToggleElement = () => document.getElementById("switchToggleWeight").children[0];
 
-/**
- * Returns the OZ/KG toggle input element from the UI
- */
-const getSpotCurrencyToggleElement = () => document.getElementById("switchToggleCurrency").children[0];
 
-
+const capitalise = word => word.charAt(0).toUpperCase() + word.slice(1);
 
 /**
  * The card element of store item tells me the data-price and data-grams value.
@@ -80,37 +58,47 @@ const getSpotCurrencyToggleElement = () => document.getElementById("switchToggle
  * There is no way to deturmine this from the markup. I will need to get the initially listed spot price and then trigger the UI even that switches between dispaying the OZ/KG price. Then grab the updated spot price and compare the two prices. the larger being the KG spot price.
  */
 
-const setStyle = (value, isProductPage) => {
-    const color = value < 3 ? "#37e13b" : value < 6 ? "#E1B637" : "#e13737";
-    const margin = isProductPage ? "margin-top: 0.4em" : "";
-    return `font-weight: bold; color: ${color}; ${margin}`;
+const setStyle = (value) => {
+    const bgc = value < 3 ? "#b0ffcb" : value < 6 ? "#ffebb0" : "#ffb2b0";
+    const color = value < 3 ? "#165b18" : value < 6 ? "#6e5610" : "#730000";
+    return `
+        font-weight: bold; 
+        background-color: ${bgc}; 
+        color: ${color}; 
+        padding: 0.2em 0.4em;
+        border-radius: 0.2em;`;
 }
 
 const cardUI = value => {
     const shell = document.createElement("div");
-    const style = setStyle(value, false);
-    shell.innerHTML = `<div class="d-flex justify-content-end align-items-center gap-1"><div><span style="${style}">${value}%</span></div></div>`;
+    const style = setStyle(value);
+    shell.setAttribute("class", "d-flex justify-content-end align-items-center gap-1")
+    shell.innerHTML = `
+        <div style="margin: 0.3em;">
+            <span style="${style}">${value}%</span>
+        </div>`;
     return shell;
 }
 
-const productUI = value => {
-    const style = setStyle(value, true);
-    const div = document.createElement("div");
-    div.innerText = `${value}%`;
-    div.style = style;
-    return div;
+const createProductElement = value => {
+    const shell = document.createElement("div");
+    const style = setStyle(value);
+    shell.setAttribute("style", "margin: 0.4em;");
+    shell.innerHTML = `<span style="${style}">${value}%</span>`;
+    return shell;
 }
 
 const findCardType = card => {
     const value = card.previousElementSibling.value;
-    const card_type = value.substring(0, value.indexOf("-"));
-    if (product_type.gold.legends.some(legend => legend === card_type)) return "gold";
-    if (product_type.silver.legends.some(legend => legend === card_type)) return "silver";
-    if (product_type.platinum.legends.some(legend => legend === card_type)) return "platinum";
+    const card_type = value.substring(0, value.indexOf("-")).toUpperCase();
+    if (gold_legends.some(legend => legend === card_type)) return "gold";
+    if (silver_legends.some(legend => legend === card_type)) return "silver";
+    if (platinum_legends.some(legend => legend === card_type)) return "platinum";
 }
 
 const findOverSpotPercentage = (type, itemPrice, itemWeight) => {
-    const spotValueByWeight = product_type[type].spot_price / (1000/itemWeight);
+    const spot_price = parseFloat(getSessionData(`${type}_spot_price`));
+    const spotValueByWeight = spot_price / (1000/itemWeight);
     const fraction = itemPrice - spotValueByWeight;
     const percentage = fraction / spotValueByWeight * 100;
     return percentage.toFixed(3);
@@ -121,7 +109,7 @@ const establishPremium = (type, item) => {
     const sanitised = worse_price.replace(/[\$\,]/g, "");
     const price = parseFloat(sanitised);
     const percentage = findOverSpotPercentage(type, price, item.dataset.grams);
-    return { percentage };
+    return percentage;
 }
 
 const findTypeFromString = string => {
@@ -138,69 +126,101 @@ const findTypeFromString = string => {
 function homePage () {
     const cards = [...document.querySelectorAll(".carousel-item .card")];
     cards.forEach(card => {
-        // identify item type
-        const description = card.querySelector(".card-title").innerText;
-        const type = findTypeFromString(description);
-        // make sure we have a type
-        if (type === undefined) return;
-        // Generate new data for item
-        const data = establishPremium(type, card);
-        // Build new element for item from data
+        const href = card.querySelector("a").getAttribute("href");
+
+        if (!sessionDataIsSet(href)) {
+            const description = card.querySelector(".card-title").innerText;
+            const type = findTypeFromString(description);
+            const percentage = establishPremium(type, card);
+            const grams = card.dataset.grams;
+            setSessionData(href, { type, grams, percentage });
+        }
+        
+        const data = getSessionData(href);
         const element = cardUI(data.percentage);
-        // Insert new element into item dom.
-        const item_dom = card.querySelector(".w-price-btn");
-        item_dom.insertBefore(element, item_dom.firstElementChild);
+        const btn = card.querySelector(".w-price-btn");
+        btn.insertBefore(element, btn.firstElementChild);
+    });
+}
+
+const displayDataOnTable = (table, data) => {
+    const rows = [...table.querySelectorAll("tr")];
+    // rows[0] is the header row
+    const hearder_row = table.querySelector("tr");
+    const th = document.createElement("th");
+    th.innerText = "%";
+    hearder_row.insertBefore(th, hearder_row.lastElementChild)
+    rows.shift();
+
+    rows.forEach(row => {
+        const td = row.firstElementChild.nextElementSibling;
+        const sanitised_td = parseFloat(td.innerText.replace(/[\$\,]/g, ""));
+        const spot = parseFloat(getSessionData(`${data.type}_spot_price`));
+        const SVW = spot / (1000/data.grams);
+        const fraction = sanitised_td - SVW;
+        const percentage = (fraction / SVW * 100).toFixed(3);
+        const element = document.createElement("td");
+        element.innerText = percentage;
+        row.insertBefore(element, row.lastElementChild);
     });
 }
 
 
-function run (path) {
-    // toggle weight to make sure we have the per kg spot price
-    const weight_element = getSpotWeightToggleElement();
-    const currency_element = getSpotCurrencyToggleElement();
-
-    const gold_spot = { then: getSpot(["gold"]).gold, now: undefined };
-
-    weight_element.click();
-
-    gold_spot.now = getSpot(["gold"]).gold;
+function run () {
+    const subpath = this.location.href.substring(0, --this.location.href.length);
+    const isProductPage = this.location.href.includes("/Buy/View/Product/Name/");
+    const location = this.location.origin === subpath ? "home" : isProductPage ? "product" : "list";
     
-    setSpot(["gold", "silver", "platinum"], gold_spot.then > gold_spot.now)
+    // Have the spot prices been determined?
+    if (this.sessionStorage.getItem("gold_spot_price") === null) {
+        // Do stuff the get the spot prices and set them to sessionStorage
+        const weight_element = getSpotWeightToggleElement();
+        // const currency_element = getSpotCurrencyToggleElement();
+        const gold_spot = { then: getSpot(["gold"]).gold, now: undefined };
+
+        weight_element.click();
+        gold_spot.now = getSpot(["gold"]).gold;
+        setSpot(["gold", "silver", "platinum"], gold_spot.then > gold_spot.now)
+    }
+
+    switch (location) {
+        case "home":
+            homePage()
+            break;
+        case "product":
+            if (!sessionDataIsSet(this.location.pathname)) return;
+            console.log(sessionDataIsSet(this.location.pathname));
+            const product_data = getSessionData(this.location.pathname);
+            const price_col = document.querySelector(".price-col");
+            const input_group = price_col.querySelector(".input-group");
+            const table = document.querySelector("table");
+            const element = createProductElement(product_data.percentage);
+            console.log(element)
+            price_col.insertBefore(element, input_group);
+            if (table) displayDataOnTable(document.querySelector("table"), product_data);
+            break;
+        case "list":
+            const wrapper = document.getElementById("productWrapper");
+            [...wrapper.querySelectorAll(".productCard")].forEach(card => {
+                const href = card.querySelector("a").getAttribute("href");
+                if (!sessionDataIsSet(href)) {
+                    const worse_price = card.querySelector(".card-price").lastElementChild.innerText;
+                    const sanitised = worse_price.replace(/[\$\,]/g, "");
+                    const price = parseFloat(sanitised);
+                    const grams = card.dataset.grams;
+                    const type = findCardType(card);
+                    const percentage = findOverSpotPercentage(type, price, grams);
+                    setSessionData(href, { type, grams, percentage });
+                }
+                const data = getSessionData(href);
+                const element = cardUI(data.percentage);
+                const btn = card.querySelector(".w-price-btn");
+                btn.insertBefore(element, btn.firstElementChild);
+            });
+            break;
+    }
+
     
-
-    // Determin what page type script to run.
-    // 1) Home page for carousel items
-    if (path.origin == path.href.substring(0, --path.href.length)) {
-        homePage();
-        return;
-    }
-    // 2) Product detail page
-    if (path.href.includes("/Buy/View/Product/Name/")) {
-        const product = path.href.substring(52, path.href.indexOf("/ID/"));
-        const type = findTypeFromString(product);
-        if (type === undefined) return;
-        // need the listed price
-        // need to know the weight
-        return;
-    }
-    // 3) Product list pages
-    const wrapper = document.getElementById("productWrapper");
-    const cards = [...wrapper.querySelectorAll(".productCard")];
-    cards.forEach(card => {
-        const worse_price = card.querySelector(".card-price").lastElementChild.innerText;
-        const sanitised = worse_price.replace(/[\$\,]/g, "");
-        const price = parseFloat(sanitised);
-        const grams = card.dataset.grams;
-        const type = findCardType(card);
-        const percentage = findOverSpotPercentage(type, price, grams);
-        const ui = cardUI(percentage);
-        const box = card.querySelector(".w-price-btn");
-        box.insertBefore(ui, box.firstElementChild)
-    });
-
-   product_type.gold.spot_price = undefined;
-   product_type.silver.spot_price = undefined;
-   product_type.platinum.spot_price = undefined;
 }
 
-run(this.location);
+run();
