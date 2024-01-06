@@ -1,5 +1,5 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "AB Price Over Spot",
     "version": "1.0",
     "description": "Displays as a percentage the price over spot being charged on all Ainslie Bullion items.",
@@ -9,13 +9,13 @@
         "48": "icon48.png",
         "128": "icon128.png"
     },
+    "host_permissions": [
+        "https://ainsliebullion.com.au/",
+        "https://ainsliebullion.com.au/Buy/*"
+    ],
     "content_scripts": [
         {
-            "js": ["content.js"],
-            "matches": [
-                "https://ainsliebullion.com.au/",
-                "https://ainsliebullion.com.au/Buy/*"
-            ]
+            "js": ["content.js"]
         }
     ]
 }
