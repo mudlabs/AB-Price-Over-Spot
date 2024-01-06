@@ -167,60 +167,62 @@ const displayDataOnTable = (table, data) => {
 
 
 function run () {
-    const subpath = this.location.href.substring(0, --this.location.href.length);
-    const isProductPage = this.location.href.includes("/Buy/View/Product/Name/");
-    const location = this.location.origin === subpath ? "home" : isProductPage ? "product" : "list";
-    
-    // Have the spot prices been determined?
-    if (this.sessionStorage.getItem("gold_spot_price") === null) {
-        // Do stuff the get the spot prices and set them to sessionStorage
-        const weight_element = getSpotWeightToggleElement();
-        // const currency_element = getSpotCurrencyToggleElement();
-        const gold_spot = { then: getSpot(["gold"]).gold, now: undefined };
+    try {
+        const subpath = this.location.href.substring(0, --this.location.href.length);
+        const isProductPage = this.location.href.includes("/Buy/View/Product/Name/");
+        const location = this.location.origin === subpath ? "home" : isProductPage ? "product" : "list";
+        
+        // Have the spot prices been determined?
+        if (this.sessionStorage.getItem("gold_spot_price") === null) {
+            // Do stuff the get the spot prices and set them to sessionStorage
+            const weight_element = getSpotWeightToggleElement();
+            // const currency_element = getSpotCurrencyToggleElement();
+            const gold_spot = { then: getSpot(["gold"]).gold, now: undefined };
 
-        weight_element.click();
-        gold_spot.now = getSpot(["gold"]).gold;
-        setSpot(["gold", "silver", "platinum"], gold_spot.then > gold_spot.now)
-    }
+            weight_element.click();
+            gold_spot.now = getSpot(["gold"]).gold;
+            setSpot(["gold", "silver", "platinum"], gold_spot.then > gold_spot.now)
+        }
 
-    switch (location) {
-        case "home":
-            homePage()
-            break;
-        case "product":
-            if (!sessionDataIsSet(this.location.pathname)) return;
-            console.log(sessionDataIsSet(this.location.pathname));
-            const product_data = getSessionData(this.location.pathname);
-            const price_col = document.querySelector(".price-col");
-            const input_group = price_col.querySelector(".input-group");
-            const table = document.querySelector("table");
-            const element = createProductElement(product_data.percentage);
-            console.log(element)
-            price_col.insertBefore(element, input_group);
-            if (table) displayDataOnTable(document.querySelector("table"), product_data);
-            break;
-        case "list":
-            const wrapper = document.getElementById("productWrapper");
-            [...wrapper.querySelectorAll(".productCard")].forEach(card => {
-                const href = card.querySelector("a").getAttribute("href");
-                if (!sessionDataIsSet(href)) {
-                    const worse_price = card.querySelector(".card-price").lastElementChild.innerText;
-                    const sanitised = worse_price.replace(/[\$\,]/g, "");
-                    const price = parseFloat(sanitised);
-                    const grams = card.dataset.grams;
-                    const type = findCardType(card);
-                    const percentage = findOverSpotPercentage(type, price, grams);
-                    setSessionData(href, { type, grams, percentage });
-                }
-                const data = getSessionData(href);
-                const element = cardUI(data.percentage);
-                const btn = card.querySelector(".w-price-btn");
-                btn.insertBefore(element, btn.firstElementChild);
-            });
-            break;
-    }
-
-    
+        switch (location) {
+            case "home":
+                homePage()
+                break;
+            case "product":
+                if (!sessionDataIsSet(this.location.pathname)) return;
+                console.log(sessionDataIsSet(this.location.pathname));
+                const product_data = getSessionData(this.location.pathname);
+                const price_col = document.querySelector(".price-col");
+                const input_group = price_col.querySelector(".input-group");
+                const table = document.querySelector("table");
+                const element = createProductElement(product_data.percentage);
+                console.log(element)
+                price_col.insertBefore(element, input_group);
+                if (table) displayDataOnTable(document.querySelector("table"), product_data);
+                break;
+            case "list":
+                const wrapper = document.getElementById("productWrapper");
+                [...wrapper.querySelectorAll(".productCard")].forEach(card => {
+                    const href = card.querySelector("a").getAttribute("href");
+                    if (!sessionDataIsSet(href)) {
+                        const worse_price = card.querySelector(".card-price").lastElementChild.innerText;
+                        const sanitised = worse_price.replace(/[\$\,]/g, "");
+                        const price = parseFloat(sanitised);
+                        const grams = card.dataset.grams;
+                        const type = findCardType(card);
+                        const percentage = findOverSpotPercentage(type, price, grams);
+                        setSessionData(href, { type, grams, percentage });
+                    }
+                    const data = getSessionData(href);
+                    const element = cardUI(data.percentage);
+                    const btn = card.querySelector(".w-price-btn");
+                    btn.insertBefore(element, btn.firstElementChild);
+                });
+                break;
+        }
+    } catch (error) {
+        console.error("AB Price Over Spot:", error);
+    }  
 }
 
 run();
