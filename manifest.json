@@ -15,7 +15,11 @@
     ],
     "content_scripts": [
         {
-            "js": ["content.js"]
+            "js": ["content.js"],
+            "matches": [
+                "https://ainsliebullion.com.au/",
+                "https://ainsliebullion.com.au/Buy/*"
+            ]
         }
     ]
 }
